@@ -1,0 +1,52 @@
+---
+# tasks file for ansible-api-github
+- name: Query to see if the repo exists
+  uri:
+    url: "{{ github_apiUrl }}/user/repos?affiliation=owner"
+    url_username: "{{ github_userAccount }}"
+    url_password: "{{ github_userToken }}"
+    force_basic_auth: yes
+    method: GET
+    status_code: 200
+    body_format: json
+  register: github_query
+
+- name: Convert to List
+  set_fact:
+    github_repos: "{{ github_repos|default([]) + [item.name] }}"
+  with_items: "{{ github_query.json }}"
+
+- name: Current project in this API account
+  debug: 
+    msg: "{{ github_repos}}"
+
+- name: Repository exists--ending play
+  meta: end_play
+  when: github_repoName in github_repos
+
+- name: Creating new repository
+  debug:
+    msg: "{{ github_repoName }} is not in list, creating."
+  when: github_repoName not in github_repos
+ 
+- name: Create GitHub Repository
+  uri:
+    url: "{{ github_apiUrl }}/user/repos"
+    url_username: "{{ github_userAccount }}"
+    url_password: "{{ github_userToken }}"
+    force_basic_auth: yes
+    method: POST
+    status_code: 201
+    body_format: json
+    body:
+      name: "{{ github_repoName }}"
+      description: "{{ github_repoDescription }}"
+      private: "{{ github_repoPrivate }}"
+      license_template: "{{ github_repoLicense }}"
+  register: github_create
+  when: github_repoName not in github_repos
+
+- name: View Results
+  debug:
+    msg: "{{ github_create }}"
+  when: github_create is defined

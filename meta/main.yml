@@ -1,0 +1,7 @@
+galaxy_info:
+  author: shrapk2
+  description: This Ansible role interacts with the GitHub API to create and manage objects.
+  license: MIT
+  min_ansible_version: 2.4
+  galaxy_tags: []
+  dependencies: []
