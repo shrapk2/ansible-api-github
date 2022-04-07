@@ -1,0 +1,51 @@
+---
+- name: Massage Facts if CSV
+  block:
+    - name: Adjust Facts if CSV - Name
+      set_fact:
+        github_repoName: "{{ item.git_repo_name }}"
+
+    - name: Adjust Facts if CSV - Description
+      set_fact:
+        #github_repoDescription: "Team: {{ item.git_project_name }}, Previous Link: {{ item.git_remoteUrl }}"
+        github_repoDescription: "Work Center: {{ item.git_project_name }}, Description: {{ item.git_remoteUrl }}"
+
+    - name: Adjust Facts if CSV - License
+      set_fact:
+        github_repoLicense: ""
+  when: item.git_repo_name is defined
+
+- name: Create GitHub Repo
+  block:
+    - name: Repository exists, ending play
+      meta: end_play
+      when:
+        - github_repos is defined
+        - github_repoName in github_repos
+
+    - name: Creating new repository
+      debug:
+        msg: "{{ github_repoName }} is not in list, creating."
+      when: github_repoName not in github_repos
+
+    - name: Create GitHub Repository
+      uri:
+        url: "{{ github_apiUrl }}/user/repos"
+        url_username: "{{ github_userAccount }}"
+        url_password: "{{ github_userToken }}"
+        force_basic_auth: yes
+        method: POST
+        status_code: 201
+        body_format: json
+        body:
+          name: "{{ github_repoName }}"
+          description: "{{ github_repoDescription }}"
+          private: "{{ github_repoPrivate }}"
+          license_template: "{{ github_repoLicense }}"
+      register: github_create
+      when: github_repoName not in github_repos
+
+    - name: View Results
+      debug:
+        msg: "{{ github_create }}"
+      when: github_create is defined
